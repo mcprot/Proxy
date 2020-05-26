@@ -1,97 +1,22 @@
 package tachyon.proxy.tunnel;
 
+import com.tekgator.queryminecraftserver.api.Status;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.AttributeKey;
+import org.javatuples.Pair;
 import tachyon.proxy.Main;
-import tachyon.proxy.Node;
+import tachyon.proxy.cache.Cache;
+import tachyon.proxy.log.Log;
+import tachyon.proxy.util.ByteUtil;
 import tachyon.proxy.util.PacketUtil;
 
 public class Proxy extends ChannelInboundHandlerAdapter {
     final static AttributeKey<SocketState> SOCKET_STATE = AttributeKey.valueOf("socketstate");
     final static AttributeKey<Channel> PROXY_CHANNEL = AttributeKey.valueOf("proxychannel");
-
-    /*
-        All of these varint implementations comes from SpigotMC's bungeecord.
-        Source: https://github.com/SpigotMC/BungeeCord/blob/master/protocol/src/main/java/net/md_5/bungee/protocol/DefinedPacket.java
-     */
-    public static int readVarInt(ByteBuf input) {
-        return readVarInt(input, 5);
-    }
-
-    public static int readVarInt(ByteBuf input, int maxBytes) {
-        int out = 0;
-        int bytes = 0;
-        byte in;
-        while (true) {
-            in = input.readByte();
-
-            out |= (in & 0x7F) << (bytes++ * 7);
-
-            if (bytes > maxBytes) {
-                throw new RuntimeException("VarInt too big");
-            }
-
-            if ((in & 0x80) != 0x80) {
-                break;
-            }
-        }
-
-        return out;
-    }
-
-    public static String readString(ByteBuf buf) {
-        int len = readVarInt(buf);
-        if (len > Short.MAX_VALUE) {
-        }
-
-        byte[] b = new byte[len];
-        buf.readBytes(b);
-
-        return new String(b);
-    }
-
-    public static void writeVarInt(int value, ByteBuf output) {
-        int part;
-        while (true) {
-            part = value & 0x7F;
-
-            value >>>= 7;
-            if (value != 0) {
-                part |= 0x80;
-            }
-
-            output.writeByte(part);
-
-            if (value == 0) {
-                break;
-            }
-        }
-    }
-
-    public static void writeString(String s, ByteBuf buf) {
-        if (s.length() > Short.MAX_VALUE) {
-        }
-
-        byte[] b = s.getBytes();
-        writeVarInt(b.length, buf);
-        buf.writeBytes(b);
-    }
-
-    public static void writeVarShort(ByteBuf buf, int toWrite) {
-        int low = toWrite & 0x7FFF;
-        int high = (toWrite & 0x7F8000) >> 15;
-        if (high != 0) {
-            low = low | 0x8000;
-        }
-        buf.writeShort(low);
-        if (high != 0) {
-            buf.writeByte(high);
-        }
-    }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -99,13 +24,13 @@ public class Proxy extends ChannelInboundHandlerAdapter {
         SocketState socketState = ctx.channel().attr(SOCKET_STATE).get();
         if (socketState == null) {
             ctx.channel().attr(SOCKET_STATE).set(SocketState.HANDSHAKE);
-            final int packetLength = readVarInt(buf);
-            final int packetID = readVarInt(buf);
+            final int packetLength = ByteUtil.readVarInt(buf);
+            final int packetID = ByteUtil.readVarInt(buf);
             if (packetID == 0) {
-                final int clientVersion = readVarInt(buf);
-                final String hostname = readString(buf);
+                final int clientVersion = ByteUtil.readVarInt(buf);
+                final String hostname = ByteUtil.readString(buf);
                 final int port = buf.readUnsignedShort();
-                final int state = readVarInt(buf);
+                final int state = ByteUtil.readVarInt(buf);
 
                 Bootstrap b = new Bootstrap();
                 b.group(Main.getWorkerGroup());
@@ -114,47 +39,86 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                 b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000);
                 b.handler(new ChannelInitializer<Channel>() {
                     @Override
-                    public void initChannel(Channel ch) throws Exception {
+                    public void initChannel(Channel ch) {
                         ch.pipeline().addLast(new ProxyHandler(ctx.channel()));
                     }
                 });
-                Node node = nodeFromHostname(hostname);
-                final ChannelFuture cf = b.connect(node.getRemoteHostname(), node.getRemoteHostPort());
 
-                cf.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        if (future.isSuccess()) {
-                            ByteBuf sendBuf = Unpooled.buffer();
-                            writeVarInt(packetLength, sendBuf);
-                            writeVarInt(packetID, sendBuf);
-                            writeVarInt(clientVersion, sendBuf);
-                            writeString(hostname, sendBuf);
-                            writeVarShort(sendBuf, port);
-                            writeVarInt(state, sendBuf);
-
-                            while (buf.readableBytes() > 0) {
-                                byte b = buf.readByte();
-                                sendBuf.writeByte(b);
-                            }
-
-                            future.channel().writeAndFlush(sendBuf); //Send out the handshake + anything else we've gotten (Request or login start packet)
-                            ctx.channel().attr(SOCKET_STATE).set(SocketState.PROXY);
-                            ctx.channel().attr(PROXY_CHANNEL).set(cf.channel());
-                        } else {
-                            ByteBuf body = PacketUtil.createStatusPacket(clientVersion);
-                            ByteBuf header = Unpooled.buffer();
-
-                            writeVarInt(body.readableBytes(), header);
-
-                            ctx.channel().writeAndFlush(header);
-                            ctx.channel().writeAndFlush(body);
-
-                            ctx.close();
-                            cf.channel().close();
+                if (state == 1) {
+                    if (!Cache.cache.containsKey(hostname.toLowerCase())) {
+                        for (ByteBuf messageOfTheDay :
+                                PacketUtil.sendMOTD(PacketUtil.createErrorMOTD(clientVersion))) {
+                            ctx.writeAndFlush(messageOfTheDay);
+                        }
+                    } else {
+                        Status status = Cache.getCachedServer(hostname).getStatus();
+                        status.getVersion().setProtocol(clientVersion);
+                        for (ByteBuf messageOfTheDay : PacketUtil.sendMOTD(status.toJson())) {
+                            ctx.writeAndFlush(messageOfTheDay);
                         }
                     }
-                });
+                    ctx.channel().attr(SOCKET_STATE).set(SocketState.STATUS);
+                } else {
+                    if (!Cache.cache.containsKey(hostname.toLowerCase())) {
+                        for (ByteBuf kick : PacketUtil.kickOnLogin("Unknown Server. Please check the address.")) {
+                            ctx.writeAndFlush(kick);
+                        }
+                    } else {
+                        Cache.Server server = Cache.getCachedServer(hostname);
+
+                        if (server != null) {
+                            final ChannelFuture cf = b.connect(server.getDestinationAddress(),
+                                    server.getDestinationPort());
+
+                            cf.addListener((ChannelFutureListener) future -> {
+                                if (future.isSuccess()) {
+                                    String[] connectingAddress = ctx.channel().remoteAddress().toString()
+                                            .replace("/", "").split(":");
+                                    Pair<String, Integer> newHostname = PacketUtil.makeHostname(hostname,
+                                            connectingAddress[0], connectingAddress[1]);
+
+                                    ByteBuf sendBuf = Unpooled.buffer();
+                                    ByteUtil.writeVarInt(packetLength + newHostname.getValue1(), sendBuf);
+                                    ByteUtil.writeVarInt(packetID, sendBuf);
+                                    ByteUtil.writeVarInt(clientVersion, sendBuf);
+                                    // todo modify hostname to include custom values & implement a key
+                                    ByteUtil.writeString(newHostname.getValue0(), sendBuf);
+                                    ByteUtil.writeVarShort(sendBuf, port);
+                                    ByteUtil.writeVarInt(state, sendBuf);
+
+                                    if (Main.isDebug())
+                                        Log.log(Log.MessageType.DEBUG,
+                                                newHostname.getValue0() + "");
+
+
+                                    while (buf.readableBytes() > 0) {
+                                        byte b1 = buf.readByte();
+                                        sendBuf.writeByte(b1);
+                                    }
+
+                                    //Send out the handshake + anything else we've gotten (Request or login start packet)
+                                    future.channel().writeAndFlush(sendBuf);
+                                    ctx.channel().attr(SOCKET_STATE).set(SocketState.PROXY);
+                                    ctx.channel().attr(PROXY_CHANNEL).set(cf.channel());
+                                } else {
+                                    for (ByteBuf kick : PacketUtil.kickOnLogin(
+                                            "Server Offline. Check back in a bit.")) {
+                                        ctx.writeAndFlush(kick);
+                                    }
+                                }
+                            });
+                        } else {
+                            for (ByteBuf kick : PacketUtil.kickOnLogin(
+                                    "Server Offline. Check back in a bit.")) {
+                                ctx.writeAndFlush(kick);
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (socketState == SocketState.STATUS) {
+            for (ByteBuf pong : PacketUtil.pong()) {
+                ctx.writeAndFlush(pong);
             }
         } else {
             Channel proxiedChannel = ctx.channel().attr(PROXY_CHANNEL).get();
@@ -164,12 +128,8 @@ public class Proxy extends ChannelInboundHandlerAdapter {
         }
     }
 
-    public Node nodeFromHostname(String req) {
-        for (Node node : Main.getSettings().getNodes()) {
-            if (node.getHostname().equalsIgnoreCase(req)) {
-                return node;
-            }
-        }
-        return null;
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        ctx.close();
     }
 }
