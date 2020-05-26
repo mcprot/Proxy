@@ -77,6 +77,7 @@ public final class QueryStatus {
          * Constructor of the builder class
          *
          * @param hostname or ip address of the Minecraft Server
+         *
          */
         public Builder(String hostname) {
             this.hostName = hostname;
@@ -87,6 +88,7 @@ public final class QueryStatus {
          * record and in case no SRV revord is found the default Minecraft port (=25565) is used
          *
          * @param port of the Minecraft Server
+         *
          */
         public Builder setPort(int port) {
             this.port = port;
@@ -117,7 +119,6 @@ public final class QueryStatus {
 
         /**
          * Set socket timeout
-         *
          * @param timeout in MS
          */
         public Builder setTimeout(int timeout) {

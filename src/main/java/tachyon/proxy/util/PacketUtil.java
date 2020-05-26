@@ -19,7 +19,7 @@ public class PacketUtil {
      * @param protocolVersion protocol verison of connecting client, because we always want to show we are the right version.
      * @return
      */
-    public static String createErrorMOTD(int protocolVersion) {
+    public static String createErrorMOTD(int protocolVersion, String errorMessage) {
         StringWriter sw = new StringWriter();
         JsonWriter writer = new JsonWriter(sw);
         try {
@@ -35,7 +35,7 @@ public class PacketUtil {
             writer.endObject();
 
             writer.name("description").beginObject();
-            writer.name("text").value("Unknown server. Please check the address.");
+            writer.name("text").value(errorMessage);
             writer.name("color").value("red");
             writer.endObject();
 

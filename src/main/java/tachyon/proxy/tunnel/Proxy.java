@@ -47,14 +47,23 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                 if (state == 1) {
                     if (!Cache.cache.containsKey(hostname.toLowerCase())) {
                         for (ByteBuf messageOfTheDay :
-                                PacketUtil.sendMOTD(PacketUtil.createErrorMOTD(clientVersion))) {
+                                PacketUtil.sendMOTD(PacketUtil.createErrorMOTD(clientVersion,
+                                        "Unknown Server. Please check the address."))) {
                             ctx.writeAndFlush(messageOfTheDay);
                         }
                     } else {
                         Status status = Cache.getCachedServer(hostname).getStatus();
-                        status.getVersion().setProtocol(clientVersion);
-                        for (ByteBuf messageOfTheDay : PacketUtil.sendMOTD(status.toJson())) {
-                            ctx.writeAndFlush(messageOfTheDay);
+                        if (status == null) {
+                            for (ByteBuf messageOfTheDay :
+                                    PacketUtil.sendMOTD(PacketUtil.createErrorMOTD(clientVersion,
+                                            "Server Offline. Check back in a bit."))) {
+                                ctx.writeAndFlush(messageOfTheDay);
+                            }
+                        } else {
+                            status.getVersion().setProtocol(clientVersion);
+                            for (ByteBuf messageOfTheDay : PacketUtil.sendMOTD(status.toJson())) {
+                                ctx.writeAndFlush(messageOfTheDay);
+                            }
                         }
                     }
                     ctx.channel().attr(SOCKET_STATE).set(SocketState.STATUS);
