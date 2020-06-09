@@ -76,8 +76,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                         Cache.Server server = Cache.getCachedServer(hostname);
 
                         if (server != null) {
-                            final ChannelFuture cf = b.connect(server.getDestinationAddress(),
-                                    server.getDestinationPort());
+                            final ChannelFuture cf = b.connect(server.getBackend().getValue0(), server.getBackend().getValue1());
 
                             cf.addListener((ChannelFutureListener) future -> {
                                 if (future.isSuccess()) {
