@@ -6,7 +6,6 @@ import java.util.Map;
 public class Analytics {
     Map<String, Integer> connections;
     private String proxy_id;
-    private double bandwidth;
 
     public Map<String, Integer> getConnections() {
         return connections;
@@ -14,14 +13,6 @@ public class Analytics {
 
     public String getProxy_id() {
         return proxy_id;
-    }
-
-    public double getBandwidth() {
-        return bandwidth;
-    }
-
-    public void setBandwidth(double bandwidth) {
-        this.bandwidth = bandwidth;
     }
 
     public class Response {

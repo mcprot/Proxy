@@ -3,6 +3,7 @@ package mcprot.proxy.cache;
 import mcprot.proxy.api.get.Analytics;
 import mcprot.proxy.api.get.Plans;
 import mcprot.proxy.api.get.Proxies;
+import mcprot.proxy.api.get.Servers;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,9 +12,14 @@ public class ExtraCache {
 
     public static HashMap<String, Analytics> analyticsCache = new HashMap<>();
     public static HashMap<String, Plans> plansCache = new HashMap<>();
+    public static HashMap<String, Servers> serversCache = new HashMap<>();
 
     public static void updateAnalyticsCache(Analytics analytics) {
         analyticsCache.put(analytics.getProxy_id(), analytics);
+    }
+
+    public static void updateServersCache(Servers servers) {
+        serversCache.put(servers.get_id(), servers);
     }
 
     public static void updatePlansCache(Plans plans) {
@@ -26,6 +32,7 @@ public class ExtraCache {
 
         int totalConnections = 0;
         for (Map.Entry<String, Integer> connections : analyticsCache.get(id).getConnections().entrySet()) {
+            //TODO check if server is online based on last request time
             totalConnections += connections.getValue();
         }
 

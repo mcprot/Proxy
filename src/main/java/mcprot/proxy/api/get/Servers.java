@@ -1,16 +1,29 @@
 package mcprot.proxy.api.get;
 
-public class Server {
+import java.util.List;
+
+public class Servers {
     private String _id;
+    private String api_key;
+    private String last_request;
+    // Getter Methods
 
     public String get_id() {
         return _id;
     }
 
+    public String getApi_key() {
+        return api_key;
+    }
+
+    public String getLast_request() {
+        return last_request;
+    }
+
     public class Response {
         private String message;
         private float status;
-        private Server data;
+        private List<Servers> data;
 
         public String getMessage() {
             return message;
@@ -20,7 +33,7 @@ public class Server {
             this.message = message;
         }
 
-        public Server getData() {
+        public List<Servers> getData() {
             return data;
         }
 

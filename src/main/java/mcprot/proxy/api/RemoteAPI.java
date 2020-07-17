@@ -7,7 +7,7 @@ import mcprot.proxy.Main;
 import mcprot.proxy.api.get.Analytics;
 import mcprot.proxy.api.get.Plans;
 import mcprot.proxy.api.get.Proxies;
-import mcprot.proxy.api.get.Server;
+import mcprot.proxy.api.get.Servers;
 import mcprot.proxy.api.put.Analytic;
 import mcprot.proxy.api.put.Connection;
 
@@ -36,10 +36,10 @@ public class RemoteAPI {
         return response;
     }
 
-    public static Server.Response getServer() {
-        HttpResponse<String> httpResponse = Unirest.get("http://localhost:3000/api/" + Main.getConfig().getApiKey() + "/server").asString();
+    public static Servers.Response getServers() {
+        HttpResponse<String> httpResponse = Unirest.get("http://localhost:3000/api/" + Main.getConfig().getApiKey() + "/servers").asString();
         Gson g = new Gson();
-        Server.Response response = g.fromJson(httpResponse.getBody(), Server.Response.class);
+        Servers.Response response = g.fromJson(httpResponse.getBody(), Servers.Response.class);
         return response;
     }
 

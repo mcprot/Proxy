@@ -9,6 +9,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.AttributeKey;
 import mcprot.proxy.DataQueue;
 import mcprot.proxy.Main;
+import mcprot.proxy.api.get.Proxies;
 import mcprot.proxy.api.put.Analytic;
 import mcprot.proxy.api.put.Connection;
 import mcprot.proxy.cache.Cache;
@@ -19,15 +20,17 @@ import mcprot.proxy.util.PacketUtil;
 import org.javatuples.Pair;
 
 import java.util.Date;
+import java.util.UUID;
 
 public class Proxy extends ChannelInboundHandlerAdapter {
     final static AttributeKey<SocketState> SOCKET_STATE = AttributeKey.valueOf("socketstate");
     final static AttributeKey<Channel> PROXY_CHANNEL = AttributeKey.valueOf("proxychannel");
+    public final static AttributeKey<Proxies> PROXY_ID = AttributeKey.valueOf("proxy_id");
+    public final static AttributeKey<UUID> CONNECTION_UUID = AttributeKey.valueOf("connection_uuid");
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception {
         final String[] ipAddress = {null};
-        final String[] proxy_id = {null};
 
         final ByteBuf buf = (ByteBuf) msg;
         SocketState socketState = ctx.channel().attr(SOCKET_STATE).get();
@@ -105,7 +108,11 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                                                 connectingAddress[0], connectingAddress[1]);
 
                                         ipAddress[0] = connectingAddress[0];
-                                        proxy_id[0] = server.getProxies().get_id();
+                                        ctx.channel().attr(PROXY_ID).set(server.getProxies());
+                                        cf.channel().attr(PROXY_ID).set(server.getProxies());
+                                        UUID uuid = UUID.randomUUID();
+                                        ctx.channel().attr(CONNECTION_UUID).set(uuid);
+                                        cf.channel().attr(CONNECTION_UUID).set(uuid);
 
                                         ByteUtil.writeVarInt(packetLength + newHostname.getValue1(), sendBuf);
                                         ByteUtil.writeVarInt(packetID, sendBuf);
@@ -132,17 +139,16 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                                     ctx.channel().attr(SOCKET_STATE).set(SocketState.PROXY);
                                     ctx.channel().attr(PROXY_CHANNEL).set(cf.channel());
 
-                                    //todo wait for this connection to be closed
-                                    //
-
-                                    Analytic analytic = DataQueue.analytics.get(proxy_id[0]);
+                                    Analytic analytic = DataQueue.analytics.get(ctx.channel().attr(PROXY_ID).get().get_id());
                                     analytic.setConnections(analytic.getConnections() + 1);
                                     ctx.channel().closeFuture().addListener((ChannelFutureListener) future1 -> {
                                         analytic.setConnections(analytic.getConnections() - 1);
+                                        //todo remove connection and add to dataqueue
+                                        Main.connectionCache.removeConnection(ctx.channel().attr(CONNECTION_UUID).get());
                                     });
 
-                                    DataQueue.connections.add(
-                                            new Connection(proxy_id[0], clientVersion,
+                                    Main.connectionCache.addConnection(ctx.channel().attr(CONNECTION_UUID).get(),
+                                            new Connection(ctx.channel().attr(PROXY_ID).get().get_id(), clientVersion,
                                                     hostname.contains("FML") ? true : false, ipAddress[0],
                                                     (new Date()).toString(), true));
                                 } else {
@@ -151,7 +157,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                                         ctx.writeAndFlush(kick);
                                     }
                                     DataQueue.connections.add(
-                                            new Connection(proxy_id[0], clientVersion,
+                                            new Connection(ctx.channel().attr(PROXY_ID).get().get_id(), clientVersion,
                                                     hostname.contains("FML") ? true : false, ipAddress[0],
                                                     (new Date()).toString(), false));
                                 }
@@ -173,6 +179,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
             try {
                 Channel proxiedChannel = ctx.channel().attr(PROXY_CHANNEL).get();
                 byte[] bytes = new byte[buf.readableBytes()];
+                Main.connectionCache.getConnection(ctx.channel().attr(Proxy.CONNECTION_UUID).get()).addBytes_ingress(buf.readableBytes());
                 buf.readBytes(bytes);
                 proxiedChannel.writeAndFlush(Unpooled.buffer().writeBytes(bytes));
             } finally {

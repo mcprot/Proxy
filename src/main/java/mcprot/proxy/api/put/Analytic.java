@@ -5,7 +5,6 @@ import java.util.List;
 public class Analytic {
 
     private String proxy_id;
-    private double bandwidth = 0;
     private int connections = 0;
 
     public Analytic(String proxy_id) {
@@ -16,24 +15,12 @@ public class Analytic {
         return proxy_id;
     }
 
-    public double getBandwidth() {
-        return bandwidth;
-    }
-
     public int getConnections() {
         return connections;
     }
 
     public void setConnections(int count) {
         this.connections = count;
-    }
-
-    public void addBandwidth(int bytes) {
-        this.bandwidth += (bytes * 10 ^ -9);
-    }
-
-    public void resetBandwidth() {
-        this.bandwidth = 0;
     }
 
     public static class Analytics {

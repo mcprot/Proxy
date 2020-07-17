@@ -5,6 +5,7 @@ import mcprot.proxy.api.RemoteAPI;
 import mcprot.proxy.api.get.Analytics;
 import mcprot.proxy.api.get.Plans;
 import mcprot.proxy.api.get.Proxies;
+import mcprot.proxy.api.get.Servers;
 import mcprot.proxy.api.put.Analytic;
 
 import java.util.*;
@@ -26,7 +27,7 @@ public class Scheduler {
                     List<Analytic> analyticList = new ArrayList<>();
                     for (Map.Entry<String, Analytic> analyticEntry : DataQueue.analytics.entrySet()) {
                         analyticList.add(analyticEntry.getValue());
-                        analyticEntry.getValue().resetBandwidth();
+                        //analyticEntry.getValue().resetBandwidth();
                     }
 
                     RemoteAPI.putAnalytic(analyticList);
@@ -44,6 +45,11 @@ public class Scheduler {
                 Plans.Response plansResponse = RemoteAPI.getPlans();
                 for (Plans plans : plansResponse.getData()) {
                     ExtraCache.updatePlansCache(plans);
+                }
+
+                Servers.Response serversResponse = RemoteAPI.getServers();
+                for (Servers servers : serversResponse.getData()) {
+                    ExtraCache.updateServersCache(servers);
                 }
 
                 Proxies.Response proxiesResponse = RemoteAPI.getProxies();

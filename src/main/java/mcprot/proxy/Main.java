@@ -10,8 +10,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import mcprot.proxy.api.RemoteAPI;
-import mcprot.proxy.api.get.Server;
+import mcprot.proxy.cache.ConnectionCache;
 import mcprot.proxy.cache.Scheduler;
 import mcprot.proxy.log.Log;
 import mcprot.proxy.signing.Signing;
@@ -28,13 +27,14 @@ public class Main {
     private static boolean debug = true;
 
     private static Config config;
-    private static Server server;
+
+    public static ConnectionCache connectionCache;
 
     public static void main(String args[]) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
         loadConfig();
         Signing.init();
 
-        server = RemoteAPI.getServer().getData();
+        connectionCache = new ConnectionCache();
 
         Scheduler.runScheduler();
         Log.log(Log.MessageType.INFO, "Starting Proxy on port " + config.getPort());
