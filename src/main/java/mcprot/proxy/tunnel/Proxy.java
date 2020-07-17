@@ -1,4 +1,4 @@
-package tachyon.proxy.tunnel;
+package mcprot.proxy.tunnel;
 
 import com.tekgator.queryminecraftserver.api.Status;
 import io.netty.bootstrap.Bootstrap;
@@ -7,12 +7,16 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.AttributeKey;
+import mcprot.proxy.DataQueue;
+import mcprot.proxy.Main;
+import mcprot.proxy.api.put.Connection;
+import mcprot.proxy.cache.Cache;
+import mcprot.proxy.log.Log;
+import mcprot.proxy.util.ByteUtil;
+import mcprot.proxy.util.PacketUtil;
 import org.javatuples.Pair;
-import tachyon.proxy.Main;
-import tachyon.proxy.cache.Cache;
-import tachyon.proxy.log.Log;
-import tachyon.proxy.util.ByteUtil;
-import tachyon.proxy.util.PacketUtil;
+
+import java.util.Date;
 
 public class Proxy extends ChannelInboundHandlerAdapter {
     final static AttributeKey<SocketState> SOCKET_STATE = AttributeKey.valueOf("socketstate");
@@ -20,6 +24,9 @@ public class Proxy extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception {
+        final String[] ipAddress = {null};
+        final String[] host = {null};
+
         final ByteBuf buf = (ByteBuf) msg;
         SocketState socketState = ctx.channel().attr(SOCKET_STATE).get();
         if (socketState == null) {
@@ -44,15 +51,17 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                     }
                 });
 
+                String fmlRemoved = hostname.replace("\0FML\0", "");
+
                 if (state == 1) {
-                    if (!Cache.cache.containsKey(hostname.toLowerCase())) {
+                    if (!Cache.cache.containsKey(fmlRemoved.toLowerCase())) {
                         for (ByteBuf messageOfTheDay :
                                 PacketUtil.sendMOTD(PacketUtil.createErrorMOTD(clientVersion,
                                         "Unknown Server. Please check the address."))) {
                             ctx.writeAndFlush(messageOfTheDay);
                         }
                     } else {
-                        Status status = Cache.getCachedServer(hostname).getStatus();
+                        Status status = Cache.getCachedServer(fmlRemoved).getStatus();
                         if (status == null) {
                             for (ByteBuf messageOfTheDay :
                                     PacketUtil.sendMOTD(PacketUtil.createErrorMOTD(clientVersion,
@@ -68,51 +77,72 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                     }
                     ctx.channel().attr(SOCKET_STATE).set(SocketState.STATUS);
                 } else {
-                    if (!Cache.cache.containsKey(hostname.toLowerCase())) {
+                    if (!Cache.cache.containsKey(fmlRemoved.toLowerCase())) {
                         for (ByteBuf kick : PacketUtil.kickOnLogin("Unknown Server. Please check the address.")) {
                             ctx.writeAndFlush(kick);
                         }
-                    } else {
-                        Cache.Server server = Cache.getCachedServer(hostname);
+                    }/* else if(!ExtraCache.canPlayerJoin(fmlRemoved.toLowerCase())){
+                        for (ByteBuf kick : PacketUtil.kickOnLogin("Too many connections to the server. Check back later.")) {
+                            ctx.writeAndFlush(kick);
+                        }
+                    }*/ else {
+                        Cache.Server server = Cache.getCachedServer(fmlRemoved);
 
                         if (server != null) {
-                            final ChannelFuture cf = b.connect(server.getBackend().getValue0(), server.getBackend().getValue1());
+                            String[] backend = server.getBackend().getValue0().split(":");
+                            final ChannelFuture cf = b.connect(backend[0], Integer.parseInt(backend[1]));
 
                             cf.addListener((ChannelFutureListener) future -> {
                                 if (future.isSuccess()) {
-                                    String[] connectingAddress = ctx.channel().remoteAddress().toString()
-                                            .replace("/", "").split(":");
-                                    Pair<String, Integer> newHostname = PacketUtil.makeHostname(hostname,
-                                            connectingAddress[0], connectingAddress[1]);
-
                                     ByteBuf sendBuf = Unpooled.buffer();
-                                    ByteUtil.writeVarInt(packetLength + newHostname.getValue1(), sendBuf);
-                                    ByteUtil.writeVarInt(packetID, sendBuf);
-                                    ByteUtil.writeVarInt(clientVersion, sendBuf);
-                                    // todo modify hostname to include custom values & implement a key
-                                    ByteUtil.writeString(newHostname.getValue0(), sendBuf);
-                                    ByteUtil.writeVarShort(sendBuf, port);
-                                    ByteUtil.writeVarInt(state, sendBuf);
 
-                                    if (Main.isDebug())
-                                        Log.log(Log.MessageType.DEBUG,
-                                                newHostname.getValue0() + "");
+                                    try {
+                                        String[] connectingAddress = ctx.channel().remoteAddress().toString()
+                                                .replace("/", "").split(":");
+                                        Pair<String, Integer> newHostname = PacketUtil.makeHostname(hostname,
+                                                connectingAddress[0], connectingAddress[1]);
+
+                                        ipAddress[0] = connectingAddress[0];
+                                        host[0] = fmlRemoved;
+
+                                        ByteUtil.writeVarInt(packetLength + newHostname.getValue1(), sendBuf);
+                                        ByteUtil.writeVarInt(packetID, sendBuf);
+                                        ByteUtil.writeVarInt(clientVersion, sendBuf);
+                                        // todo modify hostname to include custom values & implement a key
+                                        ByteUtil.writeString(newHostname.getValue0(), sendBuf);
+                                        ByteUtil.writeVarShort(sendBuf, port);
+                                        ByteUtil.writeVarInt(state, sendBuf);
+
+                                        if (Main.isDebug())
+                                            Log.log(Log.MessageType.DEBUG,
+                                                    newHostname.getValue0() + "");
 
 
-                                    while (buf.readableBytes() > 0) {
-                                        byte b1 = buf.readByte();
-                                        sendBuf.writeByte(b1);
+                                        while (buf.readableBytes() > 0) {
+                                            byte b1 = buf.readByte();
+                                            sendBuf.writeByte(b1);
+                                        }
+                                        //Send out the handshake + anything else we've gotten (Request or login start packet)
+                                        future.channel().writeAndFlush(sendBuf);
+                                    } finally {
+                                        //sendBuf.release();
                                     }
-
-                                    //Send out the handshake + anything else we've gotten (Request or login start packet)
-                                    future.channel().writeAndFlush(sendBuf);
                                     ctx.channel().attr(SOCKET_STATE).set(SocketState.PROXY);
                                     ctx.channel().attr(PROXY_CHANNEL).set(cf.channel());
+
+                                    DataQueue.connections.add(
+                                            new Connection(server.getProxies().get_id(), clientVersion,
+                                                    hostname.contains("FML") ? true : false, ipAddress[0],
+                                                    (new Date()).toString(), true));
                                 } else {
                                     for (ByteBuf kick : PacketUtil.kickOnLogin(
                                             "Server Offline. Check back in a bit.")) {
                                         ctx.writeAndFlush(kick);
                                     }
+                                    DataQueue.connections.add(
+                                            new Connection(server.getProxies().get_id(), clientVersion,
+                                                    hostname.contains("FML") ? true : false, ipAddress[0],
+                                                    (new Date()).toString(), false));
                                 }
                             });
                         } else {
@@ -129,10 +159,16 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                 ctx.writeAndFlush(pong);
             }
         } else {
-            Channel proxiedChannel = ctx.channel().attr(PROXY_CHANNEL).get();
-            byte[] bytes = new byte[buf.readableBytes()];
-            buf.readBytes(bytes);
-            proxiedChannel.writeAndFlush(Unpooled.buffer().writeBytes(bytes));
+            try {
+                Channel proxiedChannel = ctx.channel().attr(PROXY_CHANNEL).get();
+                byte[] bytes = new byte[buf.readableBytes()];
+                //TODO fix dis
+                //DataQueue.analytics.get(Cache.getCachedServer(host[0]).getProxies().get_id()).addBandwidth(buf.readableBytes());
+                buf.readBytes(bytes);
+                proxiedChannel.writeAndFlush(Unpooled.buffer().writeBytes(bytes));
+            } finally {
+                buf.release();
+            }
         }
     }
 

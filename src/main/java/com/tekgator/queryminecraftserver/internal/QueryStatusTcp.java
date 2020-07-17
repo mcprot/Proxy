@@ -3,7 +3,7 @@ package com.tekgator.queryminecraftserver.internal;
 import com.tekgator.queryminecraftserver.api.Protocol;
 import com.tekgator.queryminecraftserver.api.QueryException;
 import com.tekgator.queryminecraftserver.api.Status;
-import tachyon.proxy.util.PacketUtil;
+import mcprot.proxy.util.PacketUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;

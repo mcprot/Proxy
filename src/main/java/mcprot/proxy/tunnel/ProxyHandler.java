@@ -1,4 +1,4 @@
-package tachyon.proxy.tunnel;
+package mcprot.proxy.tunnel;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -19,9 +19,13 @@ public class ProxyHandler extends ChannelDuplexHandler {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf buf = (ByteBuf) msg;
-        byte[] bytes = new byte[buf.readableBytes()];
-        buf.readBytes(bytes);
+        try {
+            byte[] bytes = new byte[buf.readableBytes()];
+            buf.readBytes(bytes);
 
-        originalChannel.writeAndFlush(Unpooled.buffer().writeBytes(bytes));
+            originalChannel.writeAndFlush(Unpooled.buffer().writeBytes(bytes));
+        } finally {
+            //buf.release();
+        }
     }
 }

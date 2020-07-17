@@ -1,4 +1,4 @@
-package tachyon.proxy.log;
+package mcprot.proxy.log;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

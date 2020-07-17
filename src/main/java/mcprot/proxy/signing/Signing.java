@@ -1,4 +1,4 @@
-package tachyon.proxy.signing;
+package mcprot.proxy.signing;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,7 +12,7 @@ public class Signing {
 
     public static void init()
             throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-        InputStream inputStream = Signing.class.getResourceAsStream("/tachyon.key");
+        InputStream inputStream = Signing.class.getResourceAsStream("/mcprot.key");
         byte[] encodedKey = new byte[inputStream.available()];
         inputStream.read(encodedKey);
 

@@ -1,4 +1,4 @@
-package tachyon.proxy;
+package mcprot.proxy;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -10,10 +10,12 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import tachyon.proxy.cache.Scheduler;
-import tachyon.proxy.log.Log;
-import tachyon.proxy.signing.Signing;
-import tachyon.proxy.tunnel.Proxy;
+import mcprot.proxy.api.RemoteAPI;
+import mcprot.proxy.api.get.Server;
+import mcprot.proxy.cache.Scheduler;
+import mcprot.proxy.log.Log;
+import mcprot.proxy.signing.Signing;
+import mcprot.proxy.tunnel.Proxy;
 
 import java.io.*;
 import java.security.NoSuchAlgorithmException;
@@ -26,13 +28,16 @@ public class Main {
     private static boolean debug = true;
 
     private static Config config;
+    private static Server server;
 
     public static void main(String args[]) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
         loadConfig();
         Signing.init();
 
-        Scheduler.getServers();
-        Log.log(Log.MessageType.INFO, "Starting Proxy on port 25565");
+        server = RemoteAPI.getServer().getData();
+
+        Scheduler.runScheduler();
+        Log.log(Log.MessageType.INFO, "Starting Proxy on port " + config.getPort());
 
         try {
             ServerBootstrap b = new ServerBootstrap();

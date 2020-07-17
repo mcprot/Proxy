@@ -1,4 +1,4 @@
-package tachyon.proxy;
+package mcprot.proxy;
 
 public class Config {
     private String ip;

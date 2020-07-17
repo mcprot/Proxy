@@ -1,4 +1,4 @@
-package tachyon.proxy.util;
+package mcprot.proxy.util;
 
 import io.netty.buffer.ByteBuf;
 

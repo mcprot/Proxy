@@ -1,4 +1,4 @@
-package tachyon.proxy.tunnel;
+package mcprot.proxy.tunnel;
 
 public enum SocketState {
     HANDSHAKE,
