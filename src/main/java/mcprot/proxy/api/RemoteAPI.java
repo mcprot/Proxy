@@ -55,11 +55,11 @@ public class RemoteAPI {
 
     public static void putAnalytic(List<Analytic> analytics) {
         Gson g = new Gson();
-        System.out.println(g.toJson(new Analytic.Analytics(analytics)));
+        //System.out.println(g.toJson(new Analytic.Analytics(analytics)));
         HttpResponse<String> httpResponse = Unirest.put("https://panel.mcprot.com/api/" + Main.getConfig().getApiKey() + "/analytic")
                 .header("Content-Type", "application/json")
                 .body(g.toJson(new Analytic.Analytics(analytics))).asString();
-        System.out.println(httpResponse.getBody());
+        //System.out.println(httpResponse.getBody());
     }
 
 }
