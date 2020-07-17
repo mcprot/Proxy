@@ -5,6 +5,8 @@ import mcprot.proxy.api.get.Plans;
 import mcprot.proxy.api.get.Proxies;
 import mcprot.proxy.api.get.Servers;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,13 +34,30 @@ public class ExtraCache {
 
         int totalConnections = 0;
         for (Map.Entry<String, Integer> connections : analyticsCache.get(id).getConnections().entrySet()) {
-            //TODO check if server is online based on last request time
-            totalConnections += connections.getValue();
+            for (Map.Entry<String, Servers> servers : serversCache.entrySet()) {
+                if (isLastRequestRecent(new Date(servers.getValue().getLast_request()), new Date(), 45)) {
+                    if (servers.getKey().equalsIgnoreCase(connections.getKey())) {
+                        totalConnections += connections.getValue();
+                    }
+                }
+            }
         }
 
         Plans plan = plansCache.get(proxies.getPlan());
 
         if (plan.getConnections() > totalConnections) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static Boolean isLastRequestRecent(Date lastUpdate, Date currentTime, int secondsRange) {
+        Calendar lastCal = Calendar.getInstance();
+        lastCal.setTime(lastUpdate);
+        lastCal.add(Calendar.SECOND, secondsRange);
+
+        if (lastCal.getTime().compareTo(currentTime) >= 0) {
             return true;
         }
 
