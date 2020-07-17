@@ -9,8 +9,10 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.AttributeKey;
 import mcprot.proxy.DataQueue;
 import mcprot.proxy.Main;
+import mcprot.proxy.api.put.Analytic;
 import mcprot.proxy.api.put.Connection;
 import mcprot.proxy.cache.Cache;
+import mcprot.proxy.cache.ExtraCache;
 import mcprot.proxy.log.Log;
 import mcprot.proxy.util.ByteUtil;
 import mcprot.proxy.util.PacketUtil;
@@ -25,7 +27,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception {
         final String[] ipAddress = {null};
-        final String[] host = {null};
+        final String[] proxy_id = {null};
 
         final ByteBuf buf = (ByteBuf) msg;
         SocketState socketState = ctx.channel().attr(SOCKET_STATE).get();
@@ -81,11 +83,11 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                         for (ByteBuf kick : PacketUtil.kickOnLogin("Unknown Server. Please check the address.")) {
                             ctx.writeAndFlush(kick);
                         }
-                    }/* else if(!ExtraCache.canPlayerJoin(fmlRemoved.toLowerCase())){
+                    } else if (!ExtraCache.canPlayerJoin(fmlRemoved.toLowerCase())) {
                         for (ByteBuf kick : PacketUtil.kickOnLogin("Too many connections to the server. Check back later.")) {
                             ctx.writeAndFlush(kick);
                         }
-                    }*/ else {
+                    } else {
                         Cache.Server server = Cache.getCachedServer(fmlRemoved);
 
                         if (server != null) {
@@ -103,7 +105,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                                                 connectingAddress[0], connectingAddress[1]);
 
                                         ipAddress[0] = connectingAddress[0];
-                                        host[0] = fmlRemoved;
+                                        proxy_id[0] = server.getProxies().get_id();
 
                                         ByteUtil.writeVarInt(packetLength + newHostname.getValue1(), sendBuf);
                                         ByteUtil.writeVarInt(packetID, sendBuf);
@@ -130,8 +132,17 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                                     ctx.channel().attr(SOCKET_STATE).set(SocketState.PROXY);
                                     ctx.channel().attr(PROXY_CHANNEL).set(cf.channel());
 
+                                    //todo wait for this connection to be closed
+                                    //
+
+                                    Analytic analytic = DataQueue.analytics.get(proxy_id[0]);
+                                    analytic.setConnections(analytic.getConnections() + 1);
+                                    ctx.channel().closeFuture().addListener((ChannelFutureListener) future1 -> {
+                                        analytic.setConnections(analytic.getConnections() - 1);
+                                    });
+
                                     DataQueue.connections.add(
-                                            new Connection(server.getProxies().get_id(), clientVersion,
+                                            new Connection(proxy_id[0], clientVersion,
                                                     hostname.contains("FML") ? true : false, ipAddress[0],
                                                     (new Date()).toString(), true));
                                 } else {
@@ -140,7 +151,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                                         ctx.writeAndFlush(kick);
                                     }
                                     DataQueue.connections.add(
-                                            new Connection(server.getProxies().get_id(), clientVersion,
+                                            new Connection(proxy_id[0], clientVersion,
                                                     hostname.contains("FML") ? true : false, ipAddress[0],
                                                     (new Date()).toString(), false));
                                 }
@@ -162,8 +173,6 @@ public class Proxy extends ChannelInboundHandlerAdapter {
             try {
                 Channel proxiedChannel = ctx.channel().attr(PROXY_CHANNEL).get();
                 byte[] bytes = new byte[buf.readableBytes()];
-                //TODO fix dis
-                //DataQueue.analytics.get(Cache.getCachedServer(host[0]).getProxies().get_id()).addBandwidth(buf.readableBytes());
                 buf.readBytes(bytes);
                 proxiedChannel.writeAndFlush(Unpooled.buffer().writeBytes(bytes));
             } finally {

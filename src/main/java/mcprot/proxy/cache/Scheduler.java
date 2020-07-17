@@ -26,10 +26,10 @@ public class Scheduler {
                     List<Analytic> analyticList = new ArrayList<>();
                     for (Map.Entry<String, Analytic> analyticEntry : DataQueue.analytics.entrySet()) {
                         analyticList.add(analyticEntry.getValue());
+                        analyticEntry.getValue().resetBandwidth();
                     }
 
                     RemoteAPI.putAnalytic(analyticList);
-                    DataQueue.analytics.clear();
                 }
 
                 Analytics.Response analyticsResponse = RemoteAPI.getAnalytics();

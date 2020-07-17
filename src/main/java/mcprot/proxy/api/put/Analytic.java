@@ -25,11 +25,15 @@ public class Analytic {
     }
 
     public void setConnections(int count) {
-        this.connections = 0;
+        this.connections = count;
     }
 
     public void addBandwidth(int bytes) {
         this.bandwidth += (bytes * 10 ^ -9);
+    }
+
+    public void resetBandwidth() {
+        this.bandwidth = 0;
     }
 
     public static class Analytics {

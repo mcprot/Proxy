@@ -21,11 +21,12 @@ public class ProxyHandler extends ChannelDuplexHandler {
         ByteBuf buf = (ByteBuf) msg;
         try {
             byte[] bytes = new byte[buf.readableBytes()];
+            //System.out.println(buf.readableBytes());
             buf.readBytes(bytes);
 
             originalChannel.writeAndFlush(Unpooled.buffer().writeBytes(bytes));
         } finally {
-            //buf.release();
+            buf.release();
         }
     }
 }
