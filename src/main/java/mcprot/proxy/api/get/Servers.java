@@ -1,11 +1,12 @@
 package mcprot.proxy.api.get;
 
+import java.util.Date;
 import java.util.List;
 
 public class Servers {
     private String _id;
     private String api_key;
-    private String last_request;
+    private Date last_request;
     // Getter Methods
 
     public String get_id() {
@@ -16,7 +17,7 @@ public class Servers {
         return api_key;
     }
 
-    public String getLast_request() {
+    public Date getLast_request() {
         return last_request;
     }
 

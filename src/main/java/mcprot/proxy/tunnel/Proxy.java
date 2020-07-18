@@ -13,7 +13,7 @@ import mcprot.proxy.api.get.Proxies;
 import mcprot.proxy.api.put.Analytic;
 import mcprot.proxy.api.put.Connection;
 import mcprot.proxy.cache.Cache;
-import mcprot.proxy.cache.ExtraCache;
+import mcprot.proxy.cache.ExtraCacheUtils;
 import mcprot.proxy.log.Log;
 import mcprot.proxy.util.ByteUtil;
 import mcprot.proxy.util.PacketUtil;
@@ -86,12 +86,13 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                         for (ByteBuf kick : PacketUtil.kickOnLogin("Unknown Server. Please check the address.")) {
                             ctx.writeAndFlush(kick);
                         }
-                    } else if (!ExtraCache.canPlayerJoin(fmlRemoved.toLowerCase())) {
-                        for (ByteBuf kick : PacketUtil.kickOnLogin("Too many connections to the server. Check back later.")) {
+                    } else if (!ExtraCacheUtils.canJoin(fmlRemoved.toLowerCase())) {
+                        for (ByteBuf kick : PacketUtil.kickOnLogin("Too many connections. Try again.")) {
                             ctx.writeAndFlush(kick);
                         }
                     } else {
-                        Cache.Server server = Cache.getCachedServer(fmlRemoved);
+
+                        Cache.Server server = Cache.getCachedServer(fmlRemoved.toLowerCase());
 
                         if (server != null) {
                             String[] backend = server.getBackend().getValue0().split(":");
@@ -183,7 +184,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                 buf.readBytes(bytes);
                 proxiedChannel.writeAndFlush(Unpooled.buffer().writeBytes(bytes));
             } finally {
-                buf.release();
+                //buf.release();
             }
         }
     }

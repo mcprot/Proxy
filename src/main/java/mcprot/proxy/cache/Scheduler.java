@@ -33,31 +33,39 @@ public class Scheduler {
                     RemoteAPI.putAnalytic(analyticList);
                 }
 
+                Plans.Response plansResponse = RemoteAPI.getPlans();
+                ExtraCacheUtils.plansCache.clear();
+                for (Plans plans : plansResponse.getData()) {
+                    ExtraCacheUtils.updatePlansCache(plans);
+                }
+
+                Servers.Response serversResponse = RemoteAPI.getServers();
+                ExtraCacheUtils.serversCache.clear();
+                for (Servers servers : serversResponse.getData()) {
+                    ExtraCacheUtils.updateServersCache(servers);
+                }
+
+                Proxies.Response proxiesResponse = RemoteAPI.getProxies();
+                ExtraCacheUtils.proxiesCache.clear();
+                for (Proxies proxies : proxiesResponse.getData()) {
+                    Cache.updateCache(proxies);
+                    ExtraCacheUtils.updateProxiesCache(proxies);
+                }
+                Cache.cleanUpCache(proxiesResponse);
+                Cache.updateStatuses();
+
                 Analytics.Response analyticsResponse = RemoteAPI.getAnalytics();
+                ExtraCacheUtils.canJoin.clear();
                 for (Analytics analytics : analyticsResponse.getData()) {
-                    ExtraCache.updateAnalyticsCache(analytics);
+                    ExtraCacheUtils.updateAnalyticsCache(analytics);
 
                     if (DataQueue.analytics.isEmpty()) {
                         DataQueue.analytics.put(analytics.getProxy_id(), new Analytic(analytics.getProxy_id()));
                     }
-                }
 
-                Plans.Response plansResponse = RemoteAPI.getPlans();
-                for (Plans plans : plansResponse.getData()) {
-                    ExtraCache.updatePlansCache(plans);
+                    ExtraCacheUtils.canJoin.put(analytics.getProxy_id(),
+                            ExtraCacheUtils.proxyJoinable(analytics.getProxy_id()));
                 }
-
-                Servers.Response serversResponse = RemoteAPI.getServers();
-                for (Servers servers : serversResponse.getData()) {
-                    ExtraCache.updateServersCache(servers);
-                }
-
-                Proxies.Response proxiesResponse = RemoteAPI.getProxies();
-                for (Proxies proxies : proxiesResponse.getData()) {
-                    Cache.updateCache(proxies);
-                }
-                Cache.cleanUpCache(proxiesResponse);
-                Cache.updateStatuses();
             }
         };
         timer.schedule(task, 0, (1 * 60 * 1000) / 2 /* (min * second * millisecond) */);

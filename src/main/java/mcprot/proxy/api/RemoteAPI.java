@@ -25,6 +25,7 @@ public class RemoteAPI {
     public static Analytics.Response getAnalytics() {
         HttpResponse<String> httpResponse = Unirest.get("https://panel.mcprot.com/api/" + Main.getConfig().getApiKey() + "/analytics").asString();
         Gson g = new Gson();
+        //System.out.println(httpResponse.getBody());
         Analytics.Response response = g.fromJson(httpResponse.getBody(), Analytics.Response.class);
         return response;
     }
