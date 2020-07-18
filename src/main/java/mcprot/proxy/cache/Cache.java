@@ -33,9 +33,11 @@ public class Cache {
             jobHosts.add(job.getHostname());
         }
 
-        for (Map.Entry<String, Server> cacheHost : cache.entrySet()) {
-            if (!jobHosts.contains(cacheHost.getKey())) {
-                cache.remove(cacheHost.getKey());
+        Iterator cacheHost = cache.entrySet().iterator();
+        while (cacheHost.hasNext()) {
+            Map.Entry<String, Server> host = (Map.Entry<String, Server>) cacheHost.next();
+            if (!jobHosts.contains(host.getKey())) {
+                cache.remove(host.getKey());
             }
         }
     }

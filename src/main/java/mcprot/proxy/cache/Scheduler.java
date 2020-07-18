@@ -59,7 +59,7 @@ public class Scheduler {
                 for (Analytics analytics : analyticsResponse.getData()) {
                     ExtraCacheUtils.updateAnalyticsCache(analytics);
 
-                    if (DataQueue.analytics.isEmpty()) {
+                    if (DataQueue.analytics.size() != analyticsResponse.getData().size()) {
                         DataQueue.analytics.put(analytics.getProxy_id(), new Analytic(analytics.getProxy_id()));
                     }
 
