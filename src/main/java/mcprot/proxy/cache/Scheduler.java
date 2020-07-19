@@ -33,38 +33,54 @@ public class Scheduler {
                     RemoteAPI.putAnalytic(analyticList);
                 }
 
-                Plans.Response plansResponse = RemoteAPI.getPlans();
-                ExtraCacheUtils.plansCache.clear();
-                for (Plans plans : plansResponse.getData()) {
-                    ExtraCacheUtils.updatePlansCache(plans);
-                }
-
-                Servers.Response serversResponse = RemoteAPI.getServers();
-                ExtraCacheUtils.serversCache.clear();
-                for (Servers servers : serversResponse.getData()) {
-                    ExtraCacheUtils.updateServersCache(servers);
-                }
-
-                Proxies.Response proxiesResponse = RemoteAPI.getProxies();
-                ExtraCacheUtils.proxiesCache.clear();
-                for (Proxies proxies : proxiesResponse.getData()) {
-                    Cache.updateCache(proxies);
-                    ExtraCacheUtils.updateProxiesCache(proxies);
-                }
-                Cache.cleanUpCache(proxiesResponse);
-                Cache.updateStatuses();
-
-                Analytics.Response analyticsResponse = RemoteAPI.getAnalytics();
-                ExtraCacheUtils.canJoin.clear();
-                for (Analytics analytics : analyticsResponse.getData()) {
-                    ExtraCacheUtils.updateAnalyticsCache(analytics);
-
-                    if (DataQueue.analytics.size() != analyticsResponse.getData().size()) {
-                        DataQueue.analytics.put(analytics.getProxy_id(), new Analytic(analytics.getProxy_id()));
+                try {
+                    Plans.Response plansResponse = RemoteAPI.getPlans();
+                    ExtraCacheUtils.plansCache.clear();
+                    for (Plans plans : plansResponse.getData()) {
+                        ExtraCacheUtils.updatePlansCache(plans);
                     }
+                } catch (Exception e) {
 
-                    ExtraCacheUtils.canJoin.put(analytics.getProxy_id(),
-                            ExtraCacheUtils.proxyJoinable(analytics.getProxy_id()));
+                }
+
+                try {
+                    Servers.Response serversResponse = RemoteAPI.getServers();
+                    ExtraCacheUtils.serversCache.clear();
+                    for (Servers servers : serversResponse.getData()) {
+                        ExtraCacheUtils.updateServersCache(servers);
+                    }
+                } catch (Exception e) {
+
+                }
+
+                try {
+                    Proxies.Response proxiesResponse = RemoteAPI.getProxies();
+                    ExtraCacheUtils.proxiesCache.clear();
+                    for (Proxies proxies : proxiesResponse.getData()) {
+                        Cache.updateCache(proxies);
+                        ExtraCacheUtils.updateProxiesCache(proxies);
+                    }
+                    Cache.cleanUpCache(proxiesResponse);
+                    Cache.updateStatuses();
+                } catch (Exception e) {
+
+                }
+
+                try {
+                    Analytics.Response analyticsResponse = RemoteAPI.getAnalytics();
+                    ExtraCacheUtils.canJoin.clear();
+                    for (Analytics analytics : analyticsResponse.getData()) {
+                        ExtraCacheUtils.updateAnalyticsCache(analytics);
+
+                        if (DataQueue.analytics.size() != analyticsResponse.getData().size()) {
+                            DataQueue.analytics.put(analytics.getProxy_id(), new Analytic(analytics.getProxy_id()));
+                        }
+
+                        ExtraCacheUtils.canJoin.put(analytics.getProxy_id(),
+                                ExtraCacheUtils.proxyJoinable(analytics.getProxy_id()));
+                    }
+                } catch (Exception e) {
+
                 }
             }
         };

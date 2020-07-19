@@ -33,6 +33,7 @@ public class RemoteAPI {
     public static Plans.Response getPlans() {
         HttpResponse<String> httpResponse = Unirest.get("https://panel.mcprot.com/api/" + Main.getConfig().getApiKey() + "/plans").asString();
         Gson g = new Gson();
+        //System.out.println(httpResponse.getBody());
         Plans.Response response = g.fromJson(httpResponse.getBody(), Plans.Response.class);
         return response;
     }

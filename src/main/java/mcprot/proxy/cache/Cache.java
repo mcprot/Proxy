@@ -106,7 +106,8 @@ public class Cache {
                         (splitTarget.length > 1 ? Integer.parseInt(splitTarget[1]) : 25565), 0));
             }
 
-            updateStatus();
+            if (Main.isDebug())
+                Log.log(Log.MessageType.DEBUG, "Added " + hostname);
         }
 
         private Status status;
@@ -159,10 +160,6 @@ public class Cache {
                         .getStatus();
 
                 targets.get(randomTarget).setOnline(true);
-
-                if (Main.isDebug())
-                    Log.log(Log.MessageType.DEBUG, hostname + " -> " + targets.get(randomTarget).getIpAddress()
-                            + ":" + targets.get(randomTarget).getPort());
 
             } catch (QueryException e) {
                 targets.get(randomTarget).setOnline(false);
