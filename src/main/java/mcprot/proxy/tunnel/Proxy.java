@@ -56,10 +56,9 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                     }
                 });
 
-                String fmlRemoved = hostname.replace("\0FML\0", "");
-
+                String fmlRemoved = hostname.split("FML")[0].toLowerCase().replace("\0", "");
                 if (state == 1) {
-                    if (!Cache.cache.containsKey(fmlRemoved.toLowerCase())) {
+                    if (!Cache.cache.containsKey(fmlRemoved)) {
                         for (ByteBuf messageOfTheDay :
                                 PacketUtil.sendMOTD(PacketUtil.createErrorMOTD(clientVersion,
                                         "Unknown Server. Please check the address."))) {
@@ -144,7 +143,6 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                                     analytic.setConnections(analytic.getConnections() + 1);
                                     ctx.channel().closeFuture().addListener((ChannelFutureListener) future1 -> {
                                         analytic.setConnections(analytic.getConnections() - 1);
-                                        //todo remove connection and add to dataqueue
                                         Main.connectionCache.removeConnection(ctx.channel().attr(CONNECTION_UUID).get());
                                     });
 

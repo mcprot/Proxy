@@ -115,16 +115,12 @@ public class PacketUtil {
         ByteUtil.writeString(hostname, oldHostname);
 
         ByteBuf byteHostname = Unpooled.buffer();
-        String[] forgeSplit = hostname.split("\0FML\0");
+        String[] forgeSplit = hostname.split("\0", 2);
         String modifiedHostname = forgeSplit[0] + "///"
                 + sourceIP + ":" + sourcePort + "///"
-                + System.currentTimeMillis();
+                + System.currentTimeMillis() / 1000;
 
-        String encodedHostname = modifiedHostname + "///" + Signing.encode(modifiedHostname.getBytes());
-
-        if (forgeSplit.length > 1) {
-            encodedHostname += "\0FML\0" + forgeSplit[1];
-        }
+        String encodedHostname = modifiedHostname + "///" + Signing.encode(modifiedHostname.getBytes()) + (forgeSplit.length > 1 ? "\0" + forgeSplit[1] : "");
 
         ByteUtil.writeString(encodedHostname, byteHostname);
 

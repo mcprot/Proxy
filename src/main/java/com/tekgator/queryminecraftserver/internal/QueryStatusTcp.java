@@ -85,7 +85,7 @@ public class QueryStatusTcp extends QueryStatusTcpBase {
             handshake.writeByte(0x00);
             writeVarInt(handshake, Protocol.TCP.getValue()); //protocol version
             //this was modified to patch a problem with the proxy plugin blocking things...
-            String customHostname = PacketUtil.makeHostname(this.serverDNS.getTargetHostName(),
+            String customHostname = PacketUtil.makeHostname(this.serverDNS.getHostName(),
                     this.serverDNS.getIpAddress(), this.serverDNS.getPort() + "").getValue0() + "";
             writeVarInt(handshake, customHostname.length()); // hostname length
             handshake.writeBytes(customHostname); //hostname
