@@ -21,8 +21,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
 public class Main {
-    private static EventLoopGroup bossGroup = new NioEventLoopGroup();
-    private static EventLoopGroup workerGroup = new NioEventLoopGroup();
+    private static EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+    private static EventLoopGroup workerGroup = new NioEventLoopGroup(128);
 
     private static boolean debug = true;
 
@@ -49,7 +49,7 @@ public class Main {
                             ch.pipeline().addLast(new Proxy());
                         }
                     })
-                    .option(ChannelOption.SO_BACKLOG, 128)
+                    .option(ChannelOption.SO_BACKLOG, 65535)
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
 
             ChannelFuture f = b.bind(config.getIp(), config.getPort()).sync();

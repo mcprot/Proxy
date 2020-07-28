@@ -48,7 +48,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                 b.group(Main.getWorkerGroup());
                 b.channel(NioSocketChannel.class);
                 b.option(ChannelOption.SO_KEEPALIVE, true);
-                b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000);
+                b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000);
                 b.handler(new ChannelInitializer<Channel>() {
                     @Override
                     public void initChannel(Channel ch) {
@@ -182,7 +182,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                 buf.readBytes(bytes);
                 proxiedChannel.writeAndFlush(Unpooled.buffer().writeBytes(bytes));
             } finally {
-                //buf.release();
+                buf.release();
             }
         }
     }
