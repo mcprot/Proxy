@@ -48,7 +48,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                 b.group(Main.getWorkerGroup());
                 b.channel(NioSocketChannel.class);
                 b.option(ChannelOption.SO_KEEPALIVE, true);
-                b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000);
+                b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000);
                 b.handler(new ChannelInitializer<Channel>() {
                     @Override
                     public void initChannel(Channel ch) {
@@ -144,6 +144,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                                     ctx.channel().closeFuture().addListener((ChannelFutureListener) future1 -> {
                                         analytic.setConnections(analytic.getConnections() - 1);
                                         Main.connectionCache.removeConnection(ctx.channel().attr(CONNECTION_UUID).get());
+                                        cf.channel().close();
                                     });
 
                                     Main.connectionCache.addConnection(ctx.channel().attr(CONNECTION_UUID).get(),
