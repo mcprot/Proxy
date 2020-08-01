@@ -162,6 +162,7 @@ public class Cache {
                 targets.get(randomTarget).setOnline(true);
 
             } catch (QueryException e) {
+                this.status = null;
                 targets.get(randomTarget).setOnline(false);
                 if (targets.size() > 1) {
                     updateStatus();

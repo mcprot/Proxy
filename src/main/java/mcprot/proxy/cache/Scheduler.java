@@ -56,11 +56,11 @@ public class Scheduler {
                 try {
                     Proxies.Response proxiesResponse = RemoteAPI.getProxies();
                     ExtraCacheUtils.proxiesCache.clear();
+                    Cache.cleanUpCache(proxiesResponse);
                     for (Proxies proxies : proxiesResponse.getData()) {
                         Cache.updateCache(proxies);
                         ExtraCacheUtils.updateProxiesCache(proxies);
                     }
-                    Cache.cleanUpCache(proxiesResponse);
                     Cache.updateStatuses();
                 } catch (Exception e) {
 
