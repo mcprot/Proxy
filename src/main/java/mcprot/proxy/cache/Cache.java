@@ -45,6 +45,7 @@ public class Cache {
     public static void updateStatuses() {
         for (Map.Entry<String, Server> server : cache.entrySet()) {
             server.getValue().updateStatus();
+            server.getValue().updateTargets();
         }
     }
 
@@ -100,11 +101,8 @@ public class Cache {
             this.hostname = hostname;
             this.proxies = proxies;
             targets = new ArrayList<>();
-            for (String target : proxies.getTargets()) {
-                String[] splitTarget = target.split(":");
-                this.targets.add(new Target(splitTarget[0],
-                        (splitTarget.length > 1 ? Integer.parseInt(splitTarget[1]) : 25565), 0));
-            }
+
+            updateTargets();
 
             if (Main.isDebug())
                 Log.log(Log.MessageType.DEBUG, "Added " + hostname);
@@ -122,6 +120,17 @@ public class Cache {
 
         public Status getStatus() {
             return status;
+        }
+
+        public void updateTargets() {
+            for (String target : proxies.getTargets()) {
+                String[] splitTarget = target.split(":");
+                this.targets.add(new Target(splitTarget[0],
+                        (splitTarget.length > 1 ? Integer.parseInt(splitTarget[1]) : 25565), 0));
+
+                if (Main.isDebug())
+                    Log.log(Log.MessageType.DEBUG, "Added target " + hostname + " -> " + splitTarget[0] + ":" + (splitTarget.length > 1 ? Integer.parseInt(splitTarget[1]) : 25565));
+            }
         }
 
         public String getHostname() {
