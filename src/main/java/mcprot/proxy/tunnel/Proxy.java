@@ -47,7 +47,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                 b.group(Main.getWorkerGroup());
                 b.channel(NioSocketChannel.class);
                 b.option(ChannelOption.SO_KEEPALIVE, true);
-                b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000);
+                b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3500);
                 b.handler(new ChannelInitializer<Channel>() {
                     @Override
                     public void initChannel(Channel ch) {
@@ -169,7 +169,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        ctx.close();
+        //ctx.close();
     }
 
     private void writeOfflineMotd(ChannelHandlerContext ctx, int clientVersion) {
