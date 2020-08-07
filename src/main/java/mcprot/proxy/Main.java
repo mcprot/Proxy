@@ -49,7 +49,7 @@ public class Main {
                             ch.pipeline().addLast(new Proxy());
                         }
                     })
-                    .option(ChannelOption.SO_BACKLOG, 128)
+                    .option(ChannelOption.SO_BACKLOG, 65535)
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
 
             ChannelFuture f = b.bind(config.getIp(), config.getPort()).sync();
