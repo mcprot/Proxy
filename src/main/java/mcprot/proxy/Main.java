@@ -21,7 +21,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
 public class Main {
-    private static EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+    private static EventLoopGroup bossGroup = new NioEventLoopGroup(128);
     private static EventLoopGroup workerGroup = new NioEventLoopGroup(128);
 
     private static boolean debug = true;
