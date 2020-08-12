@@ -36,7 +36,7 @@ public class Main {
 
         connectionCache = new ConnectionCache();
 
-        Scheduler.runScheduler();
+        Scheduler.startScheduler();
         Log.log(Log.MessageType.INFO, "Starting Proxy on port " + config.getPort());
 
         try {
