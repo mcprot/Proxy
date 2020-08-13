@@ -26,19 +26,27 @@ public class Scheduler {
                 scheduledExecutorService.scheduleAtFixedRate(
                         () -> {
                             //TODO make it update it's own analytics first.
-                            if (!DataQueue.connections.isEmpty()) {
-                                RemoteAPI.putConnection(DataQueue.connections);
-                                DataQueue.connections.clear();
+                            try {
+                                if (!DataQueue.connections.isEmpty()) {
+                                    RemoteAPI.putConnection(DataQueue.connections);
+                                    DataQueue.connections.clear();
+                                }
+                            } catch (Exception e) {
+
                             }
 
-                            if (!DataQueue.analytics.isEmpty()) {
-                                List<Analytic> analyticList = new ArrayList<>();
-                                for (Map.Entry<String, Analytic> analyticEntry : DataQueue.analytics.entrySet()) {
-                                    analyticList.add(analyticEntry.getValue());
-                                    //analyticEntry.getValue().resetBandwidth();
-                                }
+                            try {
+                                if (!DataQueue.analytics.isEmpty()) {
+                                    List<Analytic> analyticList = new ArrayList<>();
+                                    for (Map.Entry<String, Analytic> analyticEntry : DataQueue.analytics.entrySet()) {
+                                        analyticList.add(analyticEntry.getValue());
+                                        //analyticEntry.getValue().resetBandwidth();
+                                    }
 
-                                RemoteAPI.putAnalytic(analyticList);
+                                    RemoteAPI.putAnalytic(analyticList);
+                                }
+                            } catch (Exception e) {
+
                             }
 
                             try {
