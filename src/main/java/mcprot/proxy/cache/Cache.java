@@ -3,15 +3,11 @@ package mcprot.proxy.cache;
 import com.tekgator.queryminecraftserver.api.Protocol;
 import com.tekgator.queryminecraftserver.api.QueryException;
 import com.tekgator.queryminecraftserver.api.QueryStatus;
-import com.tekgator.queryminecraftserver.api.Status;
 import mcprot.proxy.Main;
 import mcprot.proxy.api.get.Proxies;
 import mcprot.proxy.log.Log;
 import org.javatuples.Pair;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.util.*;
 
 public class Cache {
@@ -44,8 +40,8 @@ public class Cache {
 
     public static void updateStatuses() {
         for (Map.Entry<String, Server> server : cache.entrySet()) {
-            server.getValue().updateStatus();
             server.getValue().updateTargets();
+            server.getValue().updateStatus();
         }
     }
 
@@ -108,18 +104,12 @@ public class Cache {
                 Log.log(Log.MessageType.DEBUG, "Added " + hostname);
         }
 
-        private Status status;
-
         public Proxies getProxies() {
             return proxies;
         }
 
         public void setProxies(Proxies proxies) {
             this.proxies = proxies;
-        }
-
-        public Status getStatus() {
-            return status;
         }
 
         public void updateTargets() {
@@ -151,38 +141,28 @@ public class Cache {
                     }
                 }
             }
-
             return backend;
         }
 
         public void updateStatus() {
-            Random r = new Random();
-            int randomTarget = r.nextInt(targets.size());
-            try {
-                Pair<String, Integer> randomBackend = new Pair(targets.get(randomTarget).getIpAddress(),
-                        targets.get(randomTarget).getPort());
+            for (Target target : this.targets) {
+                try {
+                    Pair<String, Integer> backend = new Pair(target.getIpAddress(),
+                            target.getPort());
 
-                this.status = new QueryStatus.Builder(randomBackend.getValue0())
-                        .setPort(randomBackend.getValue1())
-                        .setProtocol(Protocol.TCP)
-                        .build()
-                        .getStatus();
+                    new QueryStatus.Builder(backend.getValue0())
+                            .setPort(backend.getValue1())
+                            .setProtocol(Protocol.TCP)
+                            .build()
+                            .getStatus();
 
-                targets.get(randomTarget).setOnline(true);
-
-            } catch (QueryException e) {
-                this.status = null;
-                targets.get(randomTarget).setOnline(false);
-                if (targets.size() > 1) {
-                    updateStatus();
+                    target.setOnline(true);
+                } catch (QueryException e) {
+                    target.setOnline(false);
+                    Log.log(Log.MessageType.ERROR, e.getMessage());
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                Log.log(Log.MessageType.ERROR, e.getMessage());
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            } catch (SignatureException e) {
-                e.printStackTrace();
-            } catch (InvalidKeyException e) {
-                e.printStackTrace();
             }
         }
     }

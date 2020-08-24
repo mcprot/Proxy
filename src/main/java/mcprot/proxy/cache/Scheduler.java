@@ -7,6 +7,7 @@ import mcprot.proxy.api.get.Plans;
 import mcprot.proxy.api.get.Proxies;
 import mcprot.proxy.api.get.Servers;
 import mcprot.proxy.api.put.Analytic;
+import mcprot.proxy.log.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,17 +26,14 @@ public class Scheduler {
         ScheduledFuture scheduledFuture =
                 scheduledExecutorService.scheduleAtFixedRate(
                         () -> {
-                            //TODO make it update it's own analytics first.
                             try {
+                                Log.log(Log.MessageType.INFO, "Running scheduler.");
+                                //TODO make it update it's own analytics first.
                                 if (!DataQueue.connections.isEmpty()) {
                                     RemoteAPI.putConnection(DataQueue.connections);
                                     DataQueue.connections.clear();
                                 }
-                            } catch (Exception e) {
 
-                            }
-
-                            try {
                                 if (!DataQueue.analytics.isEmpty()) {
                                     List<Analytic> analyticList = new ArrayList<>();
                                     for (Map.Entry<String, Analytic> analyticEntry : DataQueue.analytics.entrySet()) {
@@ -45,31 +43,19 @@ public class Scheduler {
 
                                     RemoteAPI.putAnalytic(analyticList);
                                 }
-                            } catch (Exception e) {
 
-                            }
-
-                            try {
                                 Plans.Response plansResponse = RemoteAPI.getPlans();
                                 ExtraCacheUtils.plansCache.clear();
                                 for (Plans plans : plansResponse.getData()) {
                                     ExtraCacheUtils.updatePlansCache(plans);
                                 }
-                            } catch (Exception e) {
 
-                            }
-
-                            try {
                                 Servers.Response serversResponse = RemoteAPI.getServers();
                                 ExtraCacheUtils.serversCache.clear();
                                 for (Servers servers : serversResponse.getData()) {
                                     ExtraCacheUtils.updateServersCache(servers);
                                 }
-                            } catch (Exception e) {
 
-                            }
-
-                            try {
                                 Proxies.Response proxiesResponse = RemoteAPI.getProxies();
                                 ExtraCacheUtils.proxiesCache.clear();
                                 Cache.cleanUpCache(proxiesResponse);
@@ -78,11 +64,7 @@ public class Scheduler {
                                     ExtraCacheUtils.updateProxiesCache(proxies);
                                 }
                                 Cache.updateStatuses();
-                            } catch (Exception e) {
 
-                            }
-
-                            try {
                                 Analytics.Response analyticsResponse = RemoteAPI.getAnalytics();
                                 ExtraCacheUtils.canJoin.clear();
                                 for (Analytics analytics : analyticsResponse.getData()) {
@@ -95,8 +77,10 @@ public class Scheduler {
                                     ExtraCacheUtils.canJoin.put(analytics.getProxy_id(),
                                             ExtraCacheUtils.proxyJoinable(analytics.getProxy_id()));
                                 }
+                                Log.log(Log.MessageType.INFO, "Finished running scheduler.");
                             } catch (Exception e) {
-
+                                Log.log(Log.MessageType.ERROR, "An exception has occurred in the scheduler.\n");
+                                e.printStackTrace();
                             }
                         }, 0,
                         30,

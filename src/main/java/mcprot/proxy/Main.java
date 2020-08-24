@@ -24,7 +24,7 @@ public class Main {
     private static EventLoopGroup bossGroup = new NioEventLoopGroup(128);
     private static EventLoopGroup workerGroup = new NioEventLoopGroup(128);
 
-    private static boolean debug = true;
+    private static boolean debug = false;
 
     private static Config config;
 
