@@ -113,6 +113,7 @@ public class Cache {
         }
 
         public void updateTargets() {
+            targets.clear();
             for (String target : proxies.getTargets()) {
                 String[] splitTarget = target.split(":");
                 this.targets.add(new Target(splitTarget[0],
