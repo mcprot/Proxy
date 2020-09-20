@@ -108,7 +108,10 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                                 ctx.channel().closeFuture().addListener((ChannelFutureListener) future1 -> {
                                     analytic.setConnections(analytic.getConnections() - 1);
                                     Main.connectionCache.removeConnection(ctx.channel().attr(CONNECTION_UUID).get());
+                                    cf.channel().disconnect();
+                                    ctx.channel().disconnect();
                                     cf.channel().close();
+                                    ctx.channel().close();
                                 });
 
                                 Main.connectionCache.addConnection(ctx.channel().attr(CONNECTION_UUID).get(),
@@ -169,7 +172,8 @@ public class Proxy extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        //ctx.close();
+        ctx.disconnect();
+        ctx.close();
     }
 
     private void writeOfflineMotd(ChannelHandlerContext ctx, int clientVersion) {
