@@ -78,6 +78,9 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                             .replace("/", "").split(":");
                     ctx.channel().attr(PROXY_ID).set(server.getProxies());
 
+                    UUID uuid = UUID.randomUUID();
+                    ctx.channel().attr(CONNECTION_UUID).set(uuid);
+
                     if (server.getBackend() != null) {
                         String[] backend = server.getBackend().getValue0().split(":");
                         final ChannelFuture cf = b.connect(backend[0], Integer.parseInt(backend[1]));
@@ -90,8 +93,6 @@ public class Proxy extends ChannelInboundHandlerAdapter {
 
                                 ipAddress[0] = connectingAddress[0];
                                 cf.channel().attr(PROXY_ID).set(server.getProxies());
-                                UUID uuid = UUID.randomUUID();
-                                ctx.channel().attr(CONNECTION_UUID).set(uuid);
                                 cf.channel().attr(CONNECTION_UUID).set(uuid);
 
                                 ByteUtil.writeVarInt(packetLength + newHostname.getValue1(), sendBuf);
@@ -172,7 +173,6 @@ public class Proxy extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        System.out.println(cause.getMessage());
         ctx.disconnect();
         ctx.close();
     }
