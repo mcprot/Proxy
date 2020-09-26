@@ -10,7 +10,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import mcprot.proxy.cache.ConnectionCache;
 import mcprot.proxy.cache.Scheduler;
 import mcprot.proxy.log.Log;
 import mcprot.proxy.signing.Signing;
@@ -28,13 +27,9 @@ public class Main {
 
     private static Config config;
 
-    public static ConnectionCache connectionCache;
-
     public static void main(String args[]) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
         loadConfig();
         Signing.init();
-
-        connectionCache = new ConnectionCache();
 
         Scheduler.startScheduler();
         Log.log(Log.MessageType.INFO, "Starting Proxy on port " + config.getPort());

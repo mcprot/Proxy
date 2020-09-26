@@ -6,12 +6,13 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.AttributeKey;
-import mcprot.proxy.DataQueue;
 import mcprot.proxy.Main;
+import mcprot.proxy.api.DataQueue;
 import mcprot.proxy.api.get.Proxies;
 import mcprot.proxy.api.put.Analytic;
 import mcprot.proxy.api.put.Connection;
 import mcprot.proxy.cache.Cache;
+import mcprot.proxy.cache.ConnectionCache;
 import mcprot.proxy.cache.ExtraCacheUtils;
 import mcprot.proxy.log.Log;
 import mcprot.proxy.util.ByteUtil;
@@ -46,7 +47,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                 Bootstrap b = new Bootstrap();
                 b.group(Main.getWorkerGroup());
                 b.channel(NioSocketChannel.class);
-                b.option(ChannelOption.SO_KEEPALIVE, true);
+                b.option(ChannelOption.SO_KEEPALIVE, false);
                 b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000);
                 b.handler(new ChannelInitializer<Channel>() {
                     @Override
@@ -85,6 +86,8 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                         String[] backend = server.getBackend().getValue0().split(":");
                         final ChannelFuture cf = b.connect(backend[0], Integer.parseInt(backend[1]));
 
+                        Analytic analytic = DataQueue.analytics.get(ctx.channel().attr(PROXY_ID).get().get_id());
+
                         cf.addListener((ChannelFutureListener) future -> {
                             if (future.isSuccess()) {
                                 ByteBuf sendBuf = Unpooled.buffer();
@@ -103,22 +106,17 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                                 ByteUtil.writeVarShort(sendBuf, port);
                                 ByteUtil.writeVarInt(state, sendBuf);
 
-                                Analytic analytic = DataQueue.analytics.get(ctx.channel().attr(PROXY_ID).get().get_id());
                                 analytic.setConnections(analytic.getConnections() + 1);
 
-                                ctx.channel().closeFuture().addListener((ChannelFutureListener) future1 -> {
-                                    analytic.setConnections(analytic.getConnections() - 1);
-                                    Main.connectionCache.removeConnection(ctx.channel().attr(CONNECTION_UUID).get());
-                                    cf.channel().disconnect();
-                                    ctx.channel().disconnect();
-                                    cf.channel().close();
-                                    ctx.channel().close();
-                                });
-
-                                Main.connectionCache.addConnection(ctx.channel().attr(CONNECTION_UUID).get(),
+                                ConnectionCache.addConnection(ctx.channel().attr(CONNECTION_UUID).get(),
                                         new Connection(ctx.channel().attr(PROXY_ID).get().get_id(), clientVersion,
                                                 hostname.contains("FML"), ipAddress[0],
                                                 (new Date()).toString(), true));
+
+                                ctx.channel().closeFuture().addListener((ChannelFutureListener) future1 -> {
+                                    analytic.setConnections(analytic.getConnections() - 1);
+                                    ConnectionCache.removeConnection(ctx.channel().attr(CONNECTION_UUID).get());
+                                });
 
                                 if (Main.isDebug())
                                     Log.log(Log.MessageType.DEBUG,
@@ -162,7 +160,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
             try {
                 Channel proxiedChannel = ctx.channel().attr(PROXY_CHANNEL).get();
                 byte[] bytes = new byte[buf.readableBytes()];
-                Main.connectionCache.getConnection(ctx.channel().attr(Proxy.CONNECTION_UUID).get()).addBytes_ingress(buf.readableBytes());
+                ConnectionCache.getConnection(ctx.channel().attr(Proxy.CONNECTION_UUID).get()).addBytes_ingress(buf.readableBytes());
                 buf.readBytes(bytes);
                 proxiedChannel.writeAndFlush(Unpooled.buffer().writeBytes(bytes));
             } finally {

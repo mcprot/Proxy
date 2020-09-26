@@ -1,6 +1,6 @@
 package mcprot.proxy.cache;
 
-import mcprot.proxy.DataQueue;
+import mcprot.proxy.api.DataQueue;
 import mcprot.proxy.api.RemoteAPI;
 import mcprot.proxy.api.get.Analytics;
 import mcprot.proxy.api.get.Plans;
@@ -67,6 +67,8 @@ public class Scheduler {
 
                                 Analytics.Response analyticsResponse = RemoteAPI.getAnalytics();
                                 ExtraCacheUtils.canJoin.clear();
+                                DataQueue.analytics.clear();
+
                                 for (Analytics analytics : analyticsResponse.getData()) {
                                     ExtraCacheUtils.updateAnalyticsCache(analytics);
 
