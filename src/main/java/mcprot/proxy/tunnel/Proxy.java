@@ -47,7 +47,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                 Bootstrap b = new Bootstrap();
                 b.group(Main.getWorkerGroup());
                 b.channel(NioSocketChannel.class);
-                b.option(ChannelOption.SO_KEEPALIVE, false);
+                b.option(ChannelOption.SO_KEEPALIVE, true);
                 b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000);
                 b.handler(new ChannelInitializer<Channel>() {
                     @Override
@@ -116,6 +116,12 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                                 ctx.channel().closeFuture().addListener((ChannelFutureListener) future1 -> {
                                     analytic.setConnections(analytic.getConnections() - 1);
                                     ConnectionCache.removeConnection(ctx.channel().attr(CONNECTION_UUID).get());
+
+                                    cf.channel().disconnect();
+                                    ctx.channel().disconnect();
+
+                                    cf.channel().close();
+                                    ctx.channel().close();
                                 });
 
                                 if (Main.isDebug())
@@ -171,7 +177,9 @@ public class Proxy extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        ctx.disconnect();
+        for (ByteBuf kick : PacketUtil.kickOnLogin("An exception has occurred. Please try again.")) {
+            ctx.writeAndFlush(kick);
+        }
         ctx.close();
     }
 
