@@ -25,8 +25,6 @@ public class ProxyHandler extends ChannelDuplexHandler {
             ConnectionCache.getConnection(ctx.channel().attr(Proxy.CONNECTION_UUID).get()).addBytes_egress(buf.readableBytes());
             buf.readBytes(bytes);
             originalChannel.writeAndFlush(Unpooled.buffer().writeBytes(bytes));
-        } catch (Exception e) {
-
         } finally {
             buf.release();
         }

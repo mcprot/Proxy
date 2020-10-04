@@ -3,6 +3,7 @@ package mcprot.proxy.util;
 import com.google.gson.stream.JsonWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
 import mcprot.proxy.signing.Signing;
 import org.javatuples.Pair;
 
@@ -125,5 +126,51 @@ public class PacketUtil {
         ByteUtil.writeString(encodedHostname, byteHostname);
 
         return new Pair(encodedHostname, byteHostname.readableBytes() - oldHostname.readableBytes());
+    }
+
+    public static void writeOfflineMotd(ChannelHandlerContext ctx, int clientVersion) {
+        for (ByteBuf messageOfTheDay :
+                PacketUtil.sendMOTD(PacketUtil.createErrorMOTD(clientVersion,
+                        "Server Offline. Check back in a bit."))) {
+            ctx.writeAndFlush(messageOfTheDay);
+        }
+        for (ByteBuf pong : PacketUtil.pong()) {
+            ctx.writeAndFlush(pong);
+        }
+    }
+
+    public static void writeExceptionMotd(ChannelHandlerContext ctx, int clientVersion) {
+        for (ByteBuf messageOfTheDay :
+                PacketUtil.sendMOTD(PacketUtil.createErrorMOTD(clientVersion,
+                        "An exception has occurred. Please try again."))) {
+            ctx.writeAndFlush(messageOfTheDay);
+        }
+        for (ByteBuf pong : PacketUtil.pong()) {
+            ctx.writeAndFlush(pong);
+        }
+    }
+
+    public static void writeOfflineKick(ChannelHandlerContext ctx) {
+        for (ByteBuf kick : PacketUtil.kickOnLogin(
+                "Server Offline. Check back in a bit.")) {
+            ctx.writeAndFlush(kick);
+        }
+    }
+
+    public static void writeUnknownMotd(ChannelHandlerContext ctx, int clientVersion) {
+        for (ByteBuf messageOfTheDay :
+                PacketUtil.sendMOTD(PacketUtil.createErrorMOTD(clientVersion,
+                        "Unknown Server. Please check the address."))) {
+            ctx.writeAndFlush(messageOfTheDay);
+        }
+        for (ByteBuf pong : PacketUtil.pong()) {
+            ctx.writeAndFlush(pong);
+        }
+    }
+
+    public static void writeUnknownKick(ChannelHandlerContext ctx) {
+        for (ByteBuf kick : PacketUtil.kickOnLogin("Unknown Server. Please check the address.")) {
+            ctx.writeAndFlush(kick);
+        }
     }
 }
