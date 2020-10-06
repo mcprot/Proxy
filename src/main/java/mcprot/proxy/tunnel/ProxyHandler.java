@@ -22,11 +22,18 @@ public class ProxyHandler extends ChannelDuplexHandler {
         ByteBuf buf = (ByteBuf) msg;
         try {
             byte[] bytes = new byte[buf.readableBytes()];
-            ConnectionCache.getConnection(ctx.channel().attr(Proxy.CONNECTION_UUID).get()).addBytes_egress(buf.readableBytes());
             buf.readBytes(bytes);
             originalChannel.writeAndFlush(Unpooled.buffer().writeBytes(bytes));
         } finally {
+            if (ConnectionCache.connectionHashMap.containsKey(ctx.channel().attr(Proxy.CONNECTION_UUID).get())) {
+                ConnectionCache.getConnection(ctx.channel().attr(Proxy.CONNECTION_UUID).get()).addBytes_egress(buf.readableBytes());
+            }
             buf.release();
         }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        cause.printStackTrace();
     }
 }

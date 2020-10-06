@@ -27,7 +27,6 @@ public class Proxy extends ChannelInboundHandlerAdapter {
     public final static AttributeKey<UUID> CONNECTION_UUID = AttributeKey.valueOf("connection_uuid");
     final static AttributeKey<SocketState> SOCKET_STATE = AttributeKey.valueOf("socketstate");
     final static AttributeKey<Channel> PROXY_CHANNEL = AttributeKey.valueOf("proxychannel");
-    final static AttributeKey<Boolean> PLAYER_CON = AttributeKey.valueOf("playercon");
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -36,8 +35,6 @@ public class Proxy extends ChannelInboundHandlerAdapter {
         final ByteBuf buf = (ByteBuf) msg;
         SocketState socketState = ctx.channel().attr(SOCKET_STATE).get();
 
-        ctx.channel().attr(PLAYER_CON).set(true);
-
         UUID uuid = UUID.randomUUID();
         ctx.channel().attr(CONNECTION_UUID).set(uuid);
 
@@ -45,12 +42,12 @@ public class Proxy extends ChannelInboundHandlerAdapter {
             try {
                 Channel proxiedChannel = ctx.channel().attr(PROXY_CHANNEL).get();
                 byte[] bytes = new byte[buf.readableBytes()];
-                if (ConnectionCache.connectionHashMap.containsKey(ctx.channel().attr(CONNECTION_UUID).get())) {
-                    ConnectionCache.getConnection(ctx.channel().attr(CONNECTION_UUID).get()).addBytes_ingress(buf.readableBytes());
-                }
                 buf.readBytes(bytes);
                 proxiedChannel.writeAndFlush(Unpooled.buffer().writeBytes(bytes));
             } finally {
+                if (ConnectionCache.connectionHashMap.containsKey(ctx.channel().attr(CONNECTION_UUID).get())) {
+                    ConnectionCache.getConnection(ctx.channel().attr(CONNECTION_UUID).get()).addBytes_ingress(buf.readableBytes());
+                }
                 buf.release();
             }
         } else if (socketState == null) {
@@ -95,7 +92,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
 
                 if (server == null) {
                     PacketUtil.writeOfflineKick(ctx);
-                    ctx.channel().close();
+                    ctx.close();
                     return;
                 }
                 String[] connectingAddress = ctx.channel().remoteAddress().toString()
@@ -108,7 +105,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                     } else {
                         PacketUtil.writeOfflineKick(ctx);
                     }
-                    ctx.channel().close();
+                    ctx.close();
                     return;
                 }
                 String[] backend = server.getBackend().getValue0().split(":");
@@ -118,7 +115,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
 
                 if (analytic == null) {
                     PacketUtil.writeUnknownMotd(ctx, clientVersion);
-                    ctx.channel().close();
+                    ctx.close();
                     return;
                 }
 
@@ -133,8 +130,7 @@ public class Proxy extends ChannelInboundHandlerAdapter {
                                             hostname.contains("FML"), ipAddress[0],
                                             (new Date()).toString(), false));
                         }
-                        ctx.channel().close();
-                        cf.channel().close();
+                        ctx.close();
                     }
                     ByteBuf sendBuf = Unpooled.buffer();
                     Pair<String, Integer> newHostname = PacketUtil.makeHostname(hostname,
@@ -188,14 +184,6 @@ public class Proxy extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         cause.printStackTrace();
-        /*if(ctx.channel().attr(PLAYER_CON).get()) {
-            for (ByteBuf kick : PacketUtil.kickOnLogin("An exception has occurred. Please try again.")) {
-                ctx.writeAndFlush(kick);
-            }
-            ctx.close();
-        } else {
-            writeExceptionMotd(ctx, 999);
-        }*/
     }
 
 }
